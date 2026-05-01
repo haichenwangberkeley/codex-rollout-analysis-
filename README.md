@@ -1,48 +1,74 @@
-# Codex Rollout Analysis
+# Codex Reconstruction Workflow
 
-Standalone tooling for analyzing Codex session traces stored as `rollout.jsonl`.
+Instructions for taking a new Codex rollout `.jsonl` file and producing the reconstruction artifacts plus the dashboard/workflow visualizations.
 
-The repo contains two dependency-free scripts:
+## What This Produces
 
-- `scripts/analyze_rollout.py`
-  Creates a structured JSON summary and a paper-style Markdown report.
-- `scripts/render_rollout_visuals.py`
-  Renders SVG figures directly from the trace and writes a figure manifest that the report can embed.
+Given a new rollout, this workflow creates:
 
-## Design Goals
+- A machine-readable reconstruction JSON
+- A Markdown reconstruction summary
+- A Codex dashboard SVG
+- A Codex workflow SVG
+- A figure manifest JSON
 
-- No third-party Python dependencies
-- Reproducible from a raw `rollout.jsonl`
-- Suitable for both quick inspection and paper-style writeups
-- Visual outputs remain vector SVG so they embed well in Markdown reports
+Optional:
 
-## Quick Start
+- PNG copies of the two SVG figures
 
-From this repo root:
+## Scripts
+
+The workflow uses these two scripts:
+
+- `scripts/reconstruct_rollout_evidence.py`
+- `scripts/render_rollout_visuals_codex.py`
+
+## Run From Repo Root
+
+Example input rollout:
 
 ```bash
-python3 scripts/render_rollout_visuals.py /path/to/rollout.jsonl \
-  --output-dir reports/rollout_figures \
-  --data-out reports/rollout_visual_context.json
+rollout-2026-05-01T13-14-05-019de52d-51f5-7e10-abaa-27cf600efc0c.jsonl
+```
 
-python3 scripts/analyze_rollout.py /path/to/rollout.jsonl \
-  --json-out reports/rollout_examination_summary.json \
-  --md-out reports/rollout_examination_report.md \
-  --figure-dir reports/rollout_figures
+Pick a short output id. The existing convention is to use the middle UUID chunks, for example:
+
+```bash
+51f5_7e10
+```
+
+Then run:
+
+```bash
+mkdir -p reports/<short_id>
+
+python3 scripts/reconstruct_rollout_evidence.py \
+  rollout-YYYY-MM-DDT...jsonl \
+  --out-prefix reports/<short_id>/rollout_codex_reconstruction
+
+python3 scripts/render_rollout_visuals_codex.py \
+  reports/<short_id>/rollout_codex_reconstruction.json \
+  --output-dir reports/<short_id>/visuals
 ```
 
 ## Outputs
 
-- `reports/rollout_examination_summary.json`
-- `reports/rollout_examination_report.md`
-- `reports/rollout_visual_context.json`
-- `reports/rollout_figures/rollout_dashboard.svg`
-- `reports/rollout_figures/rollout_timeline.svg`
-- `reports/rollout_figures/manifest.json`
+After the two commands finish, you should have:
 
-## Notes
+- `reports/<short_id>/rollout_codex_reconstruction.json`
+- `reports/<short_id>/rollout_codex_reconstruction.md`
+- `reports/<short_id>/visuals/rollout_codex_dashboard.svg`
+- `reports/<short_id>/visuals/rollout_codex_workflow.svg`
+- `reports/<short_id>/visuals/manifest.json`
 
-- The visual renderer uses only the Python standard library and writes plain SVG.
-- The report generator can run with or without figures. If `--figure-dir` is omitted, it produces a text-only report.
-- The phase timeline in the visual report uses a transparent heuristic:
-  audit/repair ends at the last patch event, and the rest of the first turn is treated as the blinded execution phase.
+## Optional PNG Export
+
+If you also want PNG copies of the figures:
+
+```bash
+magick reports/<short_id>/visuals/rollout_codex_dashboard.svg \
+  reports/<short_id>/visuals/rollout_codex_dashboard.png
+
+magick reports/<short_id>/visuals/rollout_codex_workflow.svg \
+  reports/<short_id>/visuals/rollout_codex_workflow.png
+```
